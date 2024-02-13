@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id              String          @id @default(uuid())
+  email           String          @unique
+  firstname       String
+  lastname        String
+  password        String
+  submissions     Submission[]
+  enrolledCourses StudentCourse[]
+}
+
+model StudentCourse {
+  studentId String
+  courseID  String
+  student   Student @relation(fields: [studentId], references: [id])
+  course    Courses @relation(fields: [courseID], references: [id])
+
+  @@id([studentId, courseID])
+}
+
+model Teacher {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  firstname      String
+  lastname       String
+  password       String
+  createdCourses Courses[]
+}
+
+model Courses {
+  id               String             @id @default(uuid())
+  title            String
+  description      String
+  teacher          Teacher            @relation(fields: [teacherId], references: [id])
+  students         StudentCourse[]
+  assignments      Assignment[]
+  CourseAssignment CourseAssignment[]
+  teacherId        String
+  @@unique([title, teacherId])
+}
+
+// model Courses {
+//   id               String             @id @default(uuid())
+//   title            String
+//   description      String
+//   teacher          Teacher            @relation(fields: [teacherId], references: [id])
+//   teacherId        String
+//   students         StudentCourse[]
+//   assignments      Assignment[]
+//   CourseAssignment CourseAssignment[]
+//   @@unique([title, teacherId])
+// }
+
+model CourseAssignment {
+  courseId     String
+  course       Courses    @relation(fields: [courseId], references: [id])
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  assignmentId String
+
+  @@id([courseId, assignmentId])
+}
+
+model Assignment {
+  id               String             @id @default(uuid())
+  title            String
+  postedOn         DateTime           @default(now())
+  description      String
+  dueDate          DateTime
+  course           Courses?           @relation(fields: [courseId], references: [id])
+  courseId         String
+  Submission       Submission[]
+  CourseAssignment CourseAssignment[]
+}
+
+model Submission {
+  id           String     @id @default(uuid())
+  submittedAt  DateTime
+  grade        Int
+  student      Student    @relation(fields: [studentId], references: [id], map: "student")
+  studentId    String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], map: "assignment")
+  assignmentId String
+  data         String
+}
