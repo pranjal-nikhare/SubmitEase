@@ -88,37 +88,86 @@ router.post(
       return res.status(500).json({ error: "Internal server error" });
     }
   }
-  // }
 );
 
 const JoinCourseSchema = zod.object({
-  courseId: zod.number(),
+  courseId: zod.string(),
 });
 
-router.post("/joinCourse", authMiddleware, (req: Request, res: Response) => {
-  const data = req.body;
-  const validate = JoinCourseSchema.safeParse(data);
-  if (!validate.success) {
-    return res.status(400).json({ error: "Validation error !" });
+router.post(
+  "/joinCourse",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    const data = req.body;
+    const validate = JoinCourseSchema.safeParse(data);
+    if (!validate.success) {
+      return res.status(400).json({ error: "Validation error !" });
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: "Token unavailable !" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload: any = decode(token);
+    const user = payload.id;
+
+    // const stud = await prisma.student.findUnique({
+    //   where: {
+    //     id: user,
+    //   },
+    //   include: {
+    //     enrolledCourses: true,
+    //   },
+    // });
+
+    // const temp = stud?.enrolledCourses;
+    // console.log(temp);
+    // if (stud.enrolledCourses) {}
+    const stud = await prisma.student.findUnique({
+      where: {
+        id: user,
+      },
+      include: {
+        enrolledCourses:
+          // true,
+          {
+            include: {
+              course: true,
+            },
+          },
+      },
+    });
+
+    // console.log(stud);
+    // const crs = stud?.enrolledCourses
+    const isEnrolled = stud?.enrolledCourses.some(
+      (course) => course.courseID === data.courseId
+    );
+
+    if (isEnrolled) {
+      return res.status(400).json({ error: "Already joint !" });
+    }
+
+    await prisma.studentCourse.create({
+      data: {
+        student: {
+          connect: {
+            id: user,
+          },
+        },
+
+        course: {
+          connect: {
+            id: data.courseId,
+          },
+        },
+      },
+    });
+
+    return res.status(201).json({ message: "Course Joint !" });
   }
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ error: "Token unavailable !" });
-  }
-
-  const token = authHeader.split(" ")[1];
-  const payload: any = decode(token);
-  const user = payload.id;
-
-  prisma.studentCourse.create({
-    data: {
-      studentId: user,
-      courseID: data.courseId,
-    },
-  });
-
-  return res.status(201).json({ message: "Course Joint !" });
-});
+);
 
 export default router;

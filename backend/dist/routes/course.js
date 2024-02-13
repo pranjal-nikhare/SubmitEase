@@ -88,13 +88,11 @@ router.post("/createcourse", middleware_1.authMiddleware, (req, res) => __awaite
         console.error(error);
         return res.status(500).json({ error: "Internal server error" });
     }
-})
-// }
-);
+}));
 const JoinCourseSchema = zod_1.default.object({
-    courseId: zod_1.default.number(),
+    courseId: zod_1.default.string(),
 });
-router.post("/joinCourse", middleware_1.authMiddleware, (req, res) => {
+router.post("/joinCourse", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const data = req.body;
     const validate = JoinCourseSchema.safeParse(data);
     if (!validate.success) {
@@ -107,12 +105,51 @@ router.post("/joinCourse", middleware_1.authMiddleware, (req, res) => {
     const token = authHeader.split(" ")[1];
     const payload = (0, jsonwebtoken_1.decode)(token);
     const user = payload.id;
-    prisma.studentCourse.create({
+    // const stud = await prisma.student.findUnique({
+    //   where: {
+    //     id: user,
+    //   },
+    //   include: {
+    //     enrolledCourses: true,
+    //   },
+    // });
+    // const temp = stud?.enrolledCourses;
+    // console.log(temp);
+    // if (stud.enrolledCourses) {}
+    const stud = yield prisma.student.findUnique({
+        where: {
+            id: user,
+        },
+        include: {
+            enrolledCourses: 
+            // true,
+            {
+                include: {
+                    course: true,
+                },
+            },
+        },
+    });
+    // console.log(stud);
+    // const crs = stud?.enrolledCourses
+    const isEnrolled = stud === null || stud === void 0 ? void 0 : stud.enrolledCourses.some((course) => course.courseID === data.courseId);
+    if (isEnrolled) {
+        return res.status(400).json({ error: "Already joint !" });
+    }
+    yield prisma.studentCourse.create({
         data: {
-            studentId: user,
-            courseID: data.courseId,
+            student: {
+                connect: {
+                    id: user,
+                },
+            },
+            course: {
+                connect: {
+                    id: data.courseId,
+                },
+            },
         },
     });
     return res.status(201).json({ message: "Course Joint !" });
-});
+}));
 exports.default = router;

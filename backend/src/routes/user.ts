@@ -57,7 +57,7 @@ router.post("/signup", async (req: Request, res: Response) => {
               id: user.id,
             });
             return res.status(200).json({
-              token: token,
+              token: "Bearer " + token,
               message: "User created",
             });
           });

@@ -66,7 +66,7 @@ router.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function*
                     id: user.id,
                 });
                 return res.status(200).json({
-                    token: token,
+                    token: "Bearer " + token,
                     message: "User created",
                 });
             });
