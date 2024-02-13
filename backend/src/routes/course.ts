@@ -2,7 +2,6 @@ import { Request, Response, Router } from "express";
 import zod from "zod";
 import { authMiddleware } from "../middleware";
 import { decode } from "jsonwebtoken";
-// import express from "express";
 
 const router = Router();
 
@@ -49,7 +48,7 @@ router.post(
         return res.status(404).json({ error: "Teacher not found" });
       }
 
-      // Attempt to find an existing course
+      // find if course exists
       const existingCourse = await prisma.courses.findFirst({
         where: {
           title: courseData.title,
@@ -57,7 +56,7 @@ router.post(
         },
       });
 
-      // If the course doesn't exist, create a new one
+      // If the course doesn't exist... create a new one
       if (!existingCourse) {
         const newCourse = await prisma.courses.create({
           data: {
@@ -76,14 +75,13 @@ router.post(
           course: newCourse,
         });
       } else {
-        // Course already exists, send appropriate response
+        // Course already exists...send appropriate response
         return res.status(200).json({
           message: "Course already exists",
-          course: existingCourse, // You might want to return the existing course details here
+          course: existingCourse,
         });
       }
     } catch (error) {
-      // Handle errors such as database issues
       console.error(error);
       return res.status(500).json({ error: "Internal server error" });
     }
@@ -113,18 +111,6 @@ router.post(
     const payload: any = decode(token);
     const user = payload.id;
 
-    // const stud = await prisma.student.findUnique({
-    //   where: {
-    //     id: user,
-    //   },
-    //   include: {
-    //     enrolledCourses: true,
-    //   },
-    // });
-
-    // const temp = stud?.enrolledCourses;
-    // console.log(temp);
-    // if (stud.enrolledCourses) {}
     const stud = await prisma.student.findUnique({
       where: {
         id: user,
@@ -140,8 +126,6 @@ router.post(
       },
     });
 
-    // console.log(stud);
-    // const crs = stud?.enrolledCourses
     const isEnrolled = stud?.enrolledCourses.some(
       (course) => course.courseID === data.courseId
     );
