@@ -7,6 +7,55 @@ const router = Router();
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+//get all courses
+router.get(
+  "/allcourses",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    const allCourses = await prisma.courses.findMany({
+      include: { teacher: true },
+    });
+
+    const data = await Promise.all(
+      allCourses.map(async (course) => ({
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        teacher: course.teacher,
+      }))
+    );
+    return res.status(200).json(data);
+  }
+);
+
+//get courses created by the teacher
+
+router.get(
+  "/createdcourses",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    const authheader = req.headers.authorization;
+    if (!authheader) {
+      return res.status(401).json({ error: "Token unavailable !" });
+    }
+
+    const token = authheader.split(" ")[1];
+    const data: any = decode(token);
+
+    const courses = await prisma.teacher.findUnique({
+      where: {
+        id: data.id,
+      },
+      include: {
+        createdCourses: true,
+      },
+    });
+
+    const resp = courses?.createdCourses;
+    return res.status(200).json(resp);
+  }
+);
+
 //get student's all courses
 router.get(
   "/mycourses",
@@ -37,22 +86,7 @@ router.get(
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
     }
-    // console.log(student);
 
-    // const courses = student.enrolledCourses.map((course) => {
-    //   //   return course.course;
-    //   //   console.log(course.course);
-    //   //   console.log(course);
-    //   const courseData = {
-    //     id: course.course.id,
-    //     title: course.course.title,
-    //     description: course.course.description,
-    //   };
-    //   return course;
-    //   return res.status(200).json(courseData);
-    // });
-
-    // const courses = student.enrolledCourses.map()
     const courses = student.enrolledCourses.map((enrolledCourse) => ({
       studentId: enrolledCourse.studentId,
       // courseID: enrolledCourse.courseID,
@@ -63,11 +97,6 @@ router.get(
       },
     }));
 
-    return res.status(200).json(courses);
-
-    // }
-    // return res.status
-    // const courseData =
     return res.status(200).json(courses);
   }
 );
