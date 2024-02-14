@@ -116,13 +116,11 @@ router.post(
         id: user,
       },
       include: {
-        enrolledCourses:
-          // true,
-          {
-            include: {
-              course: true,
-            },
+        enrolledCourses: {
+          include: {
+            course: true,
           },
+        },
       },
     });
 
