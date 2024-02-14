@@ -1,5 +1,5 @@
 import { Express, Request, Response, Router } from "express";
-// import zod from "zod";
+import zod from "zod";
 import { authMiddleware } from "../middleware";
 import { decode } from "jsonwebtoken";
 
@@ -98,6 +98,58 @@ router.get(
     }));
 
     return res.status(200).json(courses);
+  }
+);
+
+//get all students in the course - teacher
+
+const getStudentsSchema = zod.object({
+  courseId: zod.string(),
+});
+
+router.get(
+  "/getstudents",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    const payload = req.body;
+    const validate = getStudentsSchema.safeParse(payload);
+    if (!validate.success) {
+      return res.status(400).json({ error: "Validation error !" });
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: "Token unavailable !" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const data: any = decode(token);
+
+    const course = await prisma.courses.findUnique({
+      where: {
+        id: payload.courseId,
+      },
+    });
+    console.log("Course:", course); // Log the course information
+
+    if (!course) {
+      return res.status(404).json({ error: "Course not found !" });
+    }
+
+    const studentsEnrolled = await prisma.studentCourse.findMany({
+      where: {
+        courseID: payload.courseId, // Filter by courseId
+      },
+      include: {
+        student: true,
+      },
+    });
+    console.log("Students enrolled:", studentsEnrolled); // Log the students enrolled in the course
+
+    const students = studentsEnrolled.map((enrollment) => enrollment.student);
+    console.log("Mapped students:", students); // Log the mapped students
+
+    return res.status(200).json(students);
   }
 );
 

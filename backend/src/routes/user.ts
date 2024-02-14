@@ -1,7 +1,6 @@
 import { Request, Response, Router } from "express";
 import zod from "zod";
 import { createToken } from "../middleware";
-// import express from "express";
 
 const router = Router();
 
