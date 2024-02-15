@@ -83,7 +83,7 @@ router.post(
       },
     });
 
-    console.log("The Asses:", asses);
+    console.log("The Assignments:", asses);
 
     console.log("The Assignment:", theAssi);
     // return res.status(201).json(newAssignment);
