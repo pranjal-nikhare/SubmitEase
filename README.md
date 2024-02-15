@@ -1,4 +1,3 @@
-# SubmitEaz
+# SubmitEase
 
-This is a Platform where Teachers can create Courses and post assignments.
-Students can join different courses and submit assignments.
+SubmitEase is a dynamic platform empowering educators to craft engaging courses and effortlessly share assignments. Students seamlessly enroll in diverse courses and conveniently submit their assignments.
