@@ -33,6 +33,7 @@ CREATE TABLE "Courses" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
+    "teacherId" TEXT NOT NULL,
 
     CONSTRAINT "Courses_pkey" PRIMARY KEY ("id")
 );
@@ -75,6 +76,9 @@ CREATE UNIQUE INDEX "Student_email_key" ON "Student"("email");
 -- CreateIndex
 CREATE UNIQUE INDEX "Teacher_email_key" ON "Teacher"("email");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "Courses_title_teacherId_key" ON "Courses"("title", "teacherId");
+
 -- AddForeignKey
 ALTER TABLE "StudentCourse" ADD CONSTRAINT "StudentCourse_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -82,7 +86,7 @@ ALTER TABLE "StudentCourse" ADD CONSTRAINT "StudentCourse_studentId_fkey" FOREIG
 ALTER TABLE "StudentCourse" ADD CONSTRAINT "StudentCourse_courseID_fkey" FOREIGN KEY ("courseID") REFERENCES "Courses"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Courses" ADD CONSTRAINT "Courses_id_fkey" FOREIGN KEY ("id") REFERENCES "Teacher"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Courses" ADD CONSTRAINT "Courses_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "Teacher"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CourseAssignment" ADD CONSTRAINT "CourseAssignment_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Courses"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -111,6 +111,16 @@ router.post(
     const payload: any = decode(token);
     const user = payload.id;
 
+    const course = await prisma.courses.findUnique({
+      where: {
+        id: data.courseId,
+      },
+    });
+
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
     const stud = await prisma.student.findUnique({
       where: {
         id: user,
@@ -123,6 +133,10 @@ router.post(
         },
       },
     });
+
+    if (!stud) {
+      return res.status(404).json({ error: "Student not found" });
+    }
 
     const isEnrolled = stud?.enrolledCourses.some(
       (course) => course.courseID === data.courseId
