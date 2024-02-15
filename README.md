@@ -1,5 +1,4 @@
 # SubmitEaz
-git clone url 
-cd submitease
-npm install
-npx init prisma
+
+This is a Platform where Teachers can create Courses and post assignments.
+Students can join different courses and submit assignments.
