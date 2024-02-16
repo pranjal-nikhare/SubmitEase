@@ -1,8 +1,4 @@
-# SubmitEaz
-git clone url 
-cd submitease
-npm install
-npx init prisma
+# SubmitEase
 
-git fetch origin main
-git push origin <branch_name>
+SubmitEase is a dynamic platform empowering educators to craft engaging courses and effortlessly share assignments. Students seamlessly enroll in diverse courses and conveniently submit their assignments.
+
