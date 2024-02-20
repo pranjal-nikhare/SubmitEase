@@ -63,7 +63,7 @@ model Assignment {
   postedOn    DateTime     @default(now())
   description String
   dueDate     DateTime
-  course      Courses?     @relation(fields: [courseId], references: [id])
+  course      Courses?     @relation(fields: [courseId], references: [id], map: "assignmentCourse")
   courseId    String
   Submission  Submission[]
   // CourseAssignment CourseAssignment[]
