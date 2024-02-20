@@ -1,5 +1,5 @@
 import { Request, Response, Router } from "express";
-import zod from "zod";
+import zod, { boolean } from "zod";
 import { authMiddleware } from "../middleware";
 import { decode } from "jsonwebtoken";
 
@@ -62,37 +62,7 @@ router.post(
         },
       });
 
-      // const newCourseAssignment = await prisma.courseAssignment.create({
-      //   data: {
-      //     courseId: payload.data.courseId,
-      //     assignmentId: newAssignment.id,
-      //   },
-      // });
-
-      const theAssi = await prisma.courseAssignment.findFirst({
-        where: {
-          courseId: payload.data.courseId,
-        },
-      });
-
-      const datta = await prisma.courseAssignment.findMany();
-      console.log("The Data:", datta);
-
-      const assi = await prisma.courses.findMany({
-        include: {
-          CourseAssignment: true,
-        },
-      });
-
-      console.log("The Assignments:", assi);
-
-      console.log("The Assignment:", theAssi);
-
-      const assignmentz = await prisma.assignment.findMany();
-      console.log("xyz : " + assignmentz);
-
       return res.status(201).json(newAssignment);
-      // return res.status(201).json("jkjk");
     } catch (error) {
       console.error(error);
       return res.status(500).json({ error: "Internal server error" });
@@ -100,84 +70,100 @@ router.post(
   }
 );
 
-// router.post(
-//   "/createassignment",
-//   authMiddleware,
-//   async (req: Request, res: Response) => {
-//     const data = req.body;
-//     const payload = createAssignmentSchema.safeParse(data);
-//     if (!payload.success) {
-//       return res.status(400).json({ error: "Validation error !" });
-//     }
+//create a submission - student
+// import multer from "multer";
 
-//     const authHeader = req.headers.authorization;
-//     if (!authHeader) {
-//       return res.status(401).json({ error: "Token unavailable !" });
-//     }
+const submissionSchema = zod.object({
+  assignmentId: zod.string(),
+});
 
-//     const token = authHeader.split(" ")[1];
-//     const decoded: any = decode(token);
-//     const teacherId = decoded.id;
+router.post("/uploadSubmission", authMiddleware, async (req, res) => {
+  const data = req.body;
+  const payload = submissionSchema.safeParse(data);
 
-//     const course = await prisma.courses.findUnique({
-//       where: {
-//         id: payload.data.courseId,
-//         teacherId: teacherId,
-//       },
-//     });
+  if (!payload.success) {
+    return res.status(400).json({ error: "Validation error !" });
+  }
 
-//     if (!course) {
-//       return res.status(404).json({ error: "Course not found" });
-//     }
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: "Token unavailable !" });
+  }
 
-//     const dueDate = new Date(payload.data.dueDate);
+  const token = authHeader.split(" ")[1];
+  const decoded: any = decode(token);
+  const studentId = decoded.studentId;
 
-//     const newAssignment = await prisma.assignment.create({
-//       data: {
-//         title: payload.data.title,
-//         description: payload.data.description,
-//         dueDate,
-//         course: {
-//           connect: {
-//             id: payload.data.courseId,
-//           },
-//         },
-//       },
-//     });
+  const exists = prisma.student.findUnique({
+    where: {
+      id: studentId,
+    },
+  });
 
-//     const newCourseAssignment = await prisma.courseAssignment.create({
-//       data: {
-//         courseId: payload.data.courseId,
-//         assignmentId: newAssignment.id,
-//       },
-//     });
+  if (!exists) {
+    return res.status(401).json({
+      error: "User doesn't exist",
+    });
+  }
 
-//     const theAssi = await prisma.courseAssignment.findFirst({
-//       where: {
-//         courseId: payload.data.courseId,
-//       },
-//     });
+  const assignment = await prisma.assignment.findUnique({
+    where: {
+      id: payload.data.assignmentId,
+    },
+    include: {
+      course: {
+        include: {
+          students: true,
+        },
+      },
+    },
+  });
 
-//     const datta = await prisma.courseAssignment.findMany();
-//     console.log("The Data:", datta);
+  if (!assignment)
+    return res.status(404).json({
+      error: "Assignment not found",
+    });
 
-//     const asses = await prisma.courses.findMany({
-//       include: {
-//         CourseAssignment: true,
-//       },
-//     });
+  // const x = assignment.
 
-//     console.log("The Assignments:", asses);
+  //get all students in the course
+  const allStudents = assignment.course?.students;
 
-//     console.log("The Assignment:", theAssi);
-//     // return res.status(201).json(newAssignment);
-//     return res.status(201).json("jkjk");
-//   }
-// );
+  if (!allStudents)
+    return res.status(400).json({ message: "Internal server error" });
 
-// router.get()
+  //verify if stud exists in course
+  var found: boolean = false;
+  allStudents.forEach((element) => {
+    if (element.studentId === studentId) {
+      found = true;
+    }
+  });
 
-//create a submission
+  if (found === false)
+    return res.status(401).json({
+      message: "Student is not enrolled in the course",
+    });
+
+  //creating submission
+
+  const newSubmission = prisma.submission.create({
+    data: {
+      grade: 0,
+      data: "#data ",
+      student: {
+        connect: {
+          id: studentId,
+        },
+      },
+      assignment: {
+        connect: {
+          id: assignment.id,
+        },
+      },
+    },
+  });
+});
 
 //get all assignments by course
 

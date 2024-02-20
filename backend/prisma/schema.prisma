@@ -71,7 +71,7 @@ model Assignment {
 
 model Submission {
   id           String     @id @default(uuid())
-  submittedAt  DateTime
+  submittedAt  DateTime   @default(now())
   grade        Int
   student      Student    @relation(fields: [studentId], references: [id], map: "student")
   studentId    String
