@@ -1,5 +1,5 @@
 import { Request, Response, Router } from "express";
-import zod, { boolean } from "zod";
+import zod from "zod";
 import { authMiddleware } from "../middleware";
 import { decode } from "jsonwebtoken";
 
@@ -73,8 +73,12 @@ router.post(
 //create a submission - student
 // import multer from "multer";
 
+import { createUploadURL, getUploads } from "../s3Handler";
+
 const submissionSchema = zod.object({
   assignmentId: zod.string(),
+  //edgecase
+  filetype: zod.string(),
 });
 
 router.post("/uploadSubmission", authMiddleware, async (req, res) => {
@@ -92,19 +96,24 @@ router.post("/uploadSubmission", authMiddleware, async (req, res) => {
 
   const token = authHeader.split(" ")[1];
   const decoded: any = decode(token);
-  const studentId = decoded.studentId;
+  // console.log(decoded);
+  const studentId = decoded.id;
 
-  const exists = prisma.student.findUnique({
+  // console.log(studentId);
+
+  const exists = await prisma.student.findUnique({
     where: {
       id: studentId,
     },
   });
+  console.log(exists);
 
   if (!exists) {
     return res.status(401).json({
       error: "User doesn't exist",
     });
   }
+  // const idd = exists.id;
 
   const assignment = await prisma.assignment.findUnique({
     where: {
@@ -134,23 +143,23 @@ router.post("/uploadSubmission", authMiddleware, async (req, res) => {
 
   //verify if stud exists in course
   var found: boolean = false;
+  console.log(allStudents);
   allStudents.forEach((element) => {
     if (element.studentId === studentId) {
       found = true;
     }
   });
 
-  if (found === false)
+  if (!found)
     return res.status(401).json({
       message: "Student is not enrolled in the course",
     });
 
   //creating submission
-
   const newSubmission = prisma.submission.create({
     data: {
       grade: 0,
-      data: "#data ",
+      data: "temp",
       student: {
         connect: {
           id: studentId,
@@ -163,6 +172,57 @@ router.post("/uploadSubmission", authMiddleware, async (req, res) => {
       },
     },
   });
+
+  const filename = (await newSubmission).id + "." + payload.data.filetype;
+  const courseId = assignment.courseId;
+  const assignmentId = assignment.id;
+
+  const path = courseId + "/" + assignmentId;
+
+  console.log(path);
+  console.log(payload.data.filetype);
+  console.log(filename);
+
+  const url = await createUploadURL(filename, payload.data.filetype, path);
+  console.log(url);
+
+  res.status(200).json({
+    uploadPath: url,
+  });
+
+  //ensuring if file uploaded
+
+  verifier(path, filename, res);
+
+  // let uploaded = false;
+  // let time = 0;
+
+  // let intervalId = setInterval(async () => {
+  //   let data = await getUploads(path);
+  //   data.Contents?.forEach((element) => {
+  //     if (element.Key === path + filename) {
+  //       uploaded = true;
+  //     } else if (time > 120000) {
+  //       clearInterval(intervalId);
+  //       return res.status(400).json({ message: "Upload Error !" });
+  //     }
+  //     if (uploaded) {
+  //       clearInterval(intervalId);
+  //     }
+  //     time += 10000;
+  //   });
+  // }, 10000);
+
+  const updatedSubmission = prisma.submission.update({
+    where: {
+      id: (await newSubmission).id,
+    },
+    data: {
+      data: path + filename,
+    },
+  });
+
+  // return res.status(200).json({ message: "Upload successful" });
 });
 
 //get all assignments by course
@@ -172,3 +232,27 @@ router.post("/uploadSubmission", authMiddleware, async (req, res) => {
 //view all submissions for assignment by all students
 
 export default router;
+
+async function verifier(path: string, filename: string, res: Response) {
+  let uploaded = false;
+  let time = 0;
+  console.log("inside verifier");
+  let intervalId = setInterval(async () => {
+    console.log("one1");
+    let data = await getUploads(path);
+    console.log(data);
+    data.Contents?.forEach((element) => {
+      if (element.Key === path + filename) {
+        uploaded = true;
+      } else if (time > 120000) {
+        clearInterval(intervalId);
+        return res.status(400).json({ message: "Upload Error !" });
+      }
+      if (uploaded) {
+        console.log("Uploaded");
+        clearInterval(intervalId);
+      }
+      time += 10000;
+    });
+  }, 10000);
+}
