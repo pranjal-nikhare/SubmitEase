@@ -192,7 +192,25 @@ router.post("/uploadSubmission", authMiddleware, async (req, res) => {
 
   //ensuring if file uploaded
 
-  verifier(path, filename, res);
+  const verif = await verifier(path, filename, res);
+  // console.log("something is broken !");
+
+  if (verif == true) {
+    const updatedSubmission = prisma.submission.update({
+      where: {
+        id: (await newSubmission).id,
+      },
+      data: {
+        data: path + filename,
+      },
+    });
+    console.log("hurrayy !!");
+
+    console.log(await updatedSubmission);
+  } else {
+    console.log("errror");
+    return;
+  }
 
   // let uploaded = false;
   // let time = 0;
@@ -213,14 +231,18 @@ router.post("/uploadSubmission", authMiddleware, async (req, res) => {
   //   });
   // }, 10000);
 
-  const updatedSubmission = prisma.submission.update({
-    where: {
-      id: (await newSubmission).id,
-    },
-    data: {
-      data: path + filename,
-    },
-  });
+  // const updatedSubmission = prisma.submission.update({
+  //   where: {
+  //     id: (await newSubmission).id,
+  //   },
+  //   data: {
+  //     data: path + filename,
+  //   },
+  // });
+
+  // console.log("hurrayy !!");
+  // console.log(updatedSubmission);
+  // con
 
   // return res.status(200).json({ message: "Upload successful" });
 });
@@ -233,26 +255,71 @@ router.post("/uploadSubmission", authMiddleware, async (req, res) => {
 
 export default router;
 
+// async function verifier(path: string, filename: string, res: Response) {
+//   let uploaded = false;
+//   let time = 0;
+//   let submissionPath = "submissions/" + path;
+
+//   console.log("inside verifier");
+//   let intervalId = setInterval(async () => {
+//     // console.log("one1");
+
+//     let data = await getUploads(submissionPath);
+//     // console.log(data);
+
+//     data.Contents?.forEach((element) => {
+//       console.log("this is ele - " + element.Key);
+//       console.log(submissionPath + filename);
+
+//       if (element.Key === submissionPath + "/" + filename) {
+//         uploaded = true;
+//         console.log("brooo");
+//         clearInterval(intervalId);
+//       } else if (time > 120000) {
+//         clearInterval(intervalId);
+//         // return res.status(400).json({ message: "Upload Error !" });
+//         // return false;
+//       }
+
+//       time += 10000;
+//     });
+//   }, 10000);
+
+//   if (uploaded) {
+//     console.log("Uploaded");
+//     return true;
+//     // clearInterval(intervalId);
+//   } else {
+//     return false;
+//   }
+// }
+
 async function verifier(path: string, filename: string, res: Response) {
-  let uploaded = false;
+  let submissionPath = "submissions/" + path;
+  let uploadFound = false;
   let time = 0;
-  console.log("inside verifier");
-  let intervalId = setInterval(async () => {
-    console.log("one1");
-    let data = await getUploads(path);
-    console.log(data);
-    data.Contents?.forEach((element) => {
-      if (element.Key === path + filename) {
-        uploaded = true;
-      } else if (time > 120000) {
-        clearInterval(intervalId);
-        return res.status(400).json({ message: "Upload Error !" });
-      }
-      if (uploaded) {
-        console.log("Uploaded");
-        clearInterval(intervalId);
-      }
+
+  return new Promise((resolve, reject) => {
+    const intervalId = setInterval(async () => {
       time += 10000;
-    });
-  }, 10000);
+      let data = await getUploads(submissionPath);
+      // if (!data) return
+
+      // for (const element of data.Contents)
+      data.Contents?.forEach((element) => {
+        if (element.Key === submissionPath + "/" + filename) {
+          uploadFound = true;
+          clearInterval(intervalId);
+          resolve(true);
+          return;
+        }
+      });
+
+      // If the file is not found and  2 minutes have passed, reject the promise
+      if (time > 120000) {
+        clearInterval(intervalId);
+        reject(new Error("Upload verification timed out"));
+      }
+    }, 10000);
+  });
 }
