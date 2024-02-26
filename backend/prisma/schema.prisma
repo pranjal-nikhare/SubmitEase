@@ -36,43 +36,42 @@ model Teacher {
 }
 
 model Courses {
-  id               String             @id @default(uuid())
-  title            String
-  description      String
-  teacher          Teacher            @relation(fields: [teacherId], references: [id])
-  students         StudentCourse[]
-  assignments      Assignment[]
-  CourseAssignment CourseAssignment[]
-  teacherId        String
+  id          String          @id @default(uuid())
+  title       String
+  description String
+  teacher     Teacher         @relation(fields: [teacherId], references: [id])
+  students    StudentCourse[]
+  assignments Assignment[]
+  // CourseAssignment CourseAssignment[]
+  teacherId   String
+
   @@unique([title, teacherId])
 }
 
+// model CourseAssignment {
+//   courseId     String
+//   course       Courses    @relation(fields: [courseId], references: [id])
+//   assignment   Assignment @relation(fields: [assignmentId], references: [id])
+//   assignmentId String
 
-
-model CourseAssignment {
-  courseId     String
-  course       Courses    @relation(fields: [courseId], references: [id])
-  assignment   Assignment @relation(fields: [assignmentId], references: [id])
-  assignmentId String
-
-  @@id([courseId, assignmentId])
-}
+//   @@id([courseId, assignmentId])
+// }
 
 model Assignment {
-  id               String             @id @default(uuid())
-  title            String
-  postedOn         DateTime           @default(now())
-  description      String
-  dueDate          DateTime
-  course           Courses?           @relation(fields: [courseId], references: [id])
-  courseId         String
-  Submission       Submission[]
-  CourseAssignment CourseAssignment[]
+  id          String       @id @default(uuid())
+  title       String
+  postedOn    DateTime     @default(now())
+  description String
+  dueDate     DateTime
+  course      Courses?     @relation(fields: [courseId], references: [id], map: "assignmentCourse")
+  courseId    String
+  Submission  Submission[]
+  // CourseAssignment CourseAssignment[]
 }
 
 model Submission {
   id           String     @id @default(uuid())
-  submittedAt  DateTime
+  submittedAt  DateTime   @default(now())
   grade        Int
   student      Student    @relation(fields: [studentId], references: [id], map: "student")
   studentId    String
@@ -80,7 +79,6 @@ model Submission {
   assignmentId String
   data         String
 }
-
 
 // model Courses {
 //   id               String             @id @default(uuid())

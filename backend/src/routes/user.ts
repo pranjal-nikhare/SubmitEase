@@ -140,7 +140,15 @@ router.post("/teacherSignup", async (req: Request, res: Response) => {
   });
 
   if (exists) {
-    return res.status(400).json({ error: "User already exists" });
+    const token = createToken({
+      id: exists.id,
+      verified: true,
+      username: exists.email,
+      role: "teacher",
+    });
+    return res
+      .status(400)
+      .json({ error: "User already exists", token: "Bearer " + token });
   } else {
     prisma.teacher
       .create({
